@@ -1,0 +1,14 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://192.168.1.9:27017/moulu
+      # uri: mongodb://用户名:密码@服务器IP:端口/数据库名
+      # admin 用户认证 url 写法： mongodb://账户:密码%40@ip:端口/数据库名?authSource=admin&authMechanism=SCRAM-SHA-1
+  application:
+    name: mongodb
+logging:
+  level:
+    root: info
+  config: classpath:logback-config.xml
+  file:
+    path: /tmp/logs
