@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: spring-mongo
+  # 解决Dubbo的循环依赖
+  main:
+    allow-circular-references: true
+  cloud:
+    nacos:
+      server-addr: 192.168.1.7:8848
+      username: nacos
+      password: nacos
+      config:
+        extension-configs:
+          - dataId: log.yaml
+            group: DEFAULT_GROUP
+            refresh: true
+        file-extension: yaml
+        enabled: false
+      discovery:
+        enabled: true
+
+# 配置要加载boot里面才行，加载application中则加载不到文件
+logging:
+  level:
+    root: info
+  config: classpath:logback-config.xml
+  file:
+    path: /tmp/logs
