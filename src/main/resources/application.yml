@@ -1,7 +1,8 @@
 spring:
   data:
     mongodb:
-      uri: mongodb://192.168.1.5:27017/luyun
+       uri: mongodb://192.168.1.5:27017/luyun
+#      uri: mongodb://192.168.1.161:19060/td_blockchain
       # uri: mongodb://用户名:密码@服务器IP:端口/数据库名
       # admin 用户认证 url 写法： mongodb://账户:密码%40@ip:端口/数据库名?authSource=admin&authMechanism=SCRAM-SHA-1
   application:
@@ -29,3 +30,5 @@ dubbo:
     check: true
   provider:
     timeout: 10000
+  cloud:
+    subscribed-services: spring-mybatis
