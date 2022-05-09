@@ -16,9 +16,9 @@
      >
      > {"$group":{"_id":"$userId",            ## 类似MySql的group by userId
      >
-     > ​	"create_time ":{"$first":"$create_time "},
+     > "create_time ":{"$first":"$create_time "},
      >
-     > ​	"price":{"$first":"$price"} }},
+     > "price":{"$first":"$price"} }},
      >
      > {"$limit":1}  ## 查询结果返回1条
      >
@@ -27,3 +27,16 @@
      > 如上述代码的例子：mongo 会依次执行，数组中的顺序不同，带来的结果也将是不同的。
      > 
 3. 可以将 Mongo Compass 将查询语句转换为 Java 代码
+4. MongoTemplate 中的 insertAll 和 bulkOps 的探索。
+```java
+/**
+ * inserAll he  bulkOps。<br>
+ * 1. 在只插入的情况下，insertAll 可以达到 1000w/h，bulkOps 可以达到1500w/h。（具体还要看文本量的大小）<br>
+ * 2. insertAll 只支持插入，bulkOps支持更新。<br>
+ */
+interface MongoTemplate{
+  
+  void insertAll();
+  void bulkOps();
+}
+```
