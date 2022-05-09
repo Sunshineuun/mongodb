@@ -1,13 +1,22 @@
 package com.qiusm.mongodb;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.model.Filters;
 import com.qiusm.mongodb.entity.UserEntity;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.BsonDocument;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.BulkOperations;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.AggregationSpELExpression;
+import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.index.IndexOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 
@@ -22,6 +31,7 @@ import java.util.*;
 public class MongodbTemplateTest extends MongodbApplicationTests {
     @Resource
     private MongoTemplate mongoTemplate;
+
 
     @Test
     public void getMongoTemplate() {
@@ -122,5 +132,87 @@ public class MongodbTemplateTest extends MongodbApplicationTests {
         log.info("{}", JSONObject.toJSONString(results.getMappedResults()));
 
 
+    }
+
+    @Test
+    public void agg1() {
+        LookupOperation lookup = Aggregation.lookup("indicator", "indicator_list_json.id", "id", "items");
+        LookupOperation lookup1 = Aggregation.lookup("indicator", "indicator_list_json.version", "items.version", "items1");
+
+        Aggregation agg = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("version").is("3")),
+                Aggregation.unwind("indicator_list_json"),
+                lookup,
+//                lookup1
+                Aggregation.unwind("items"),
+                lookup1
+
+        );
+
+        AggregationResults<Map> r = mongoTemplate.aggregate(agg, "indicator_publish", Map.class);
+        log.info("1");
+
+    }
+
+    @Test
+    void agg2() {
+        Bson g1 = Filters.eq("version", "3");
+        BsonDocument bsonMatch = BsonDocument.parse("{$match: {version: \"3\"}}");
+        BsonDocument bsonUnwind = BsonDocument.parse("{$unwind: \"$indicator_list_json\"}");
+        BsonDocument bsonLockup = BsonDocument.parse("{$lookup: {from: \"indicator\", let: {pid: '$indicator_list_json.id', pversion: '$indicator_list_json.version'}, pipeline: [{$match: {$expr: {$and: [{$eq: [{$toString: '$id'}, {$toString: '$$pid'}]}, {$eq: [{$toString: '$version'}, {$toString: '$$pversion'}]}]}}}], as: \"items\"}}");
+        BsonDocument bsonUnwindItems = BsonDocument.parse("{$unwind: \"$items\"}");
+        AggregateIterable<Map> r = mongoTemplate.getDb().getCollection("indicator_publish").aggregate(
+                Arrays.asList(bsonMatch, bsonUnwind, bsonLockup, bsonUnwindItems),
+                Map.class
+        );
+        for (Map next : r) {
+            log.info("{}", next);
+            Object id = ((Document) next.get("indicator_list_json")).get("id");
+            Object version = ((Document) next.get("indicator_list_json")).get("version");
+
+            Object pid = ((Document) next.get("items")).get("id");
+            Object pversion = ((Document) next.get("items")).get("version");
+
+            log.info("id:pid => {}:{}; version:pversion => {}:{}", id, pid, version, pversion);
+
+        }
+    }
+
+    /**
+     * 执行mongo原生脚本
+     */
+    @Test
+    void bson() {
+        String s = "[\n" +
+                "    {$match: {version: \"3\"}},\n" +
+                "    {$unwind: \"$indicator_list_json\"},\n" +
+                "    {$lookup: {from: \"indicator\", let: {pid: '$indicator_list_json.id', pversion: '$indicator_list_json.version'}, pipeline: [{$match: {$expr: {$and: [{$eq: [{$toString: '$id'}, {$toString: '$$pid'}]}, {$eq: [{$toString: '$version'}, {$toString: '$$pversion'}]}]}}}], as: \"items\"}}, {\n" +
+                "        $unwind: \"$items\"\n" +
+                "    }]";
+        JSONArray array = JSONObject.parseArray(s);
+        List<Bson> list = new ArrayList<>();
+        array.forEach(o -> {
+            list.add(BsonDocument.parse(JSONObject.toJSONString(o)));
+        });
+
+        AggregateIterable<Map> r = mongoTemplate.getDb().getCollection("indicator_publish").aggregate(
+                list,
+                Map.class
+        );
+        for (Map next : r) {
+            log.info("{}", next);
+            Object id = ((Document) next.get("indicator_list_json")).get("id");
+            Object version = ((Document) next.get("indicator_list_json")).get("version");
+
+            Object pid = ((Document) next.get("items")).get("id");
+            Object pversion = ((Document) next.get("items")).get("version");
+
+            log.info("id:pid => {}:{}; version:pversion => {}:{}", id, pid, version, pversion);
+
+        }
+    }
+
+    @Test
+    void bulkOps() {
     }
 }
