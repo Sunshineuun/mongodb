@@ -39,3 +39,5 @@ dubbo:
     timeout: 10000
   cloud:
     subscribed-services: spring-mybatis
+  application:
+    name: ${spring.application.name}
