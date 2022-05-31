@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.qiusm</groupId>
             <artifactId>spring-api</artifactId>
-            <version>0.0.1</version>
+            <version>${parent.version}</version>
         </dependency>
 
         <dependency>
